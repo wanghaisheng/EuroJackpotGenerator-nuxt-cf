@@ -1,9 +1,15 @@
 import { fetchStatistics } from './statisticsManager';
 import { generateNumbersWithStats, generateRandomNumbers } from './numberGenerator';
-import { Ticket, TicketSet } from '~/types/ticket';
+import type { Ticket, TicketSet } from '~/types/ticket';
 
 export async function generateTickets(numSets: number): Promise<TicketSet[]> {
-  const statsData = await fetchStatistics();
+  let statsData: any | null = null;
+  try {
+    statsData = await fetchStatistics();
+  } catch (error) {
+    console.error('Failed to fetch statistics, using random generation:', error);
+  }
+
   const generatedTickets = new Set<string>();
   const sets: TicketSet[] = [];
 
@@ -11,25 +17,46 @@ export async function generateTickets(numSets: number): Promise<TicketSet[]> {
     const tickets: Ticket[] = [];
 
     for (let ticketIndex = 0; ticketIndex < 12; ticketIndex++) {
-      let mainNumbers: number[], euroNumbers: number[], ticketKey: string;
+      let mainNumbers: number[];
+      let euroNumbers: number[];
+      let ticketKey: string;
+      let retries = 0;
+      const MAX_RETRIES = 10;
 
       do {
-        if (statsData) {
-          mainNumbers = generateNumbersWithStats(5, statsData.numbers);
-          euroNumbers = generateNumbersWithStats(2, statsData.additionalNumbers);
-        } else {
+        try {
+          if (statsData) {
+            mainNumbers = generateNumbersWithStats(5, statsData.numbers);
+            euroNumbers = generateNumbersWithStats(2, statsData.additionalNumbers);
+          } else {
+            mainNumbers = generateRandomNumbers(5, 1, 50);
+            euroNumbers = generateRandomNumbers(2, 1, 12);
+          }
+        } catch (error) {
+          console.error('Error generating numbers, falling back to random:', error);
           mainNumbers = generateRandomNumbers(5, 1, 50);
           euroNumbers = generateRandomNumbers(2, 1, 12);
         }
         ticketKey = mainNumbers.join(',') + '|' + euroNumbers.join(',');
+        retries += 1;
+
+        if (retries > MAX_RETRIES) {
+          throw new Error('Max retries exceeded while generating unique tickets.');
+        }
       } while (generatedTickets.has(ticketKey));
 
       generatedTickets.add(ticketKey);
 
-      tickets.push({ mainNumbers, euroNumbers });
+      tickets.push({
+        mainNumbers: mainNumbers,
+        euroNumbers: euroNumbers,
+      });
     }
 
-    sets.push({ setNumber: setIndex + 1, tickets });
+    sets.push({
+      setNumber: setIndex + 1,
+      tickets: tickets,
+    });
   }
 
   return sets;

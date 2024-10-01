@@ -44,7 +44,7 @@ const generateTickets = async () => {
   tickets.value = []
 
   try {
-    const response = await fetch('/api/generate', {
+    const response = await fetch(`${config.public.apiBase}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
