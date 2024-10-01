@@ -1,8 +1,9 @@
 import { H3Error, createError } from 'h3';
+import { generateEurojackpotUrl } from '~/utils/dateUtils';
 
 export default defineEventHandler(async (event) => {
   try {
-    const url = generateNearestEurojackpotUrl();
+    const url = generateEurojackpotUrl('previous');
     console.log('Fetching winning data from:', url);
 
     const response = await fetch(url, { 
@@ -31,52 +32,6 @@ export default defineEventHandler(async (event) => {
     return fallbackData;
   }
 });
-
-function generateNearestEurojackpotUrl() {
-  const baseUrl = "https://www.lotto-bayern.de/getEurojackpotHistoricOdds?gckey=";
-
-  // Get the current date
-  const today = new Date();
-
-  // Helper function to get the previous draw date (Tuesday or Friday)
-  function getPreviousDrawDate(date) {
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const drawDays = [2, 5]; // Tuesday and Friday
-
-      // Calculate days since last draw day
-      const daysSinceLastDraw = drawDays
-          .map(drawDay => (dayOfWeek - drawDay + 7) % 7)
-          .sort((a, b) => a - b)[0];
-
-      const lastDrawDate = new Date(date);
-      lastDrawDate.setDate(date.getDate() - daysSinceLastDraw);
-      return lastDrawDate;
-  }
-
-  // Function to get ISO week number
-  function getISOWeekNumber(date) {
-      const target = new Date(date.valueOf());
-      const dayNr = (date.getDay() + 6) % 7;
-      target.setDate(target.getDate() - dayNr + 3);
-      const firstThursday = target.getTime();
-      target.setMonth(0, 1);
-      if (target.getDay() !== 4) {
-          target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
-      }
-      const weekNumber = 1 + Math.ceil((firstThursday - target) / 604800000);
-      return weekNumber;
-  }
-
-  const lastDrawDate = getPreviousDrawDate(today);
-  const weekNumber = getISOWeekNumber(lastDrawDate);
-  const year = lastDrawDate.getFullYear();
-  const drawDay = lastDrawDate.getDay(); // 2 for Tuesday, 5 for Friday
-
-  const gckey = `${year}-${weekNumber}-${drawDay}`;
-  const fullUrl = `${baseUrl}${gckey}`;
-
-  return fullUrl;
-}
 
 function getFallbackWinningData() {
   return {
