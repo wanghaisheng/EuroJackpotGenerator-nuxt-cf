@@ -33,6 +33,17 @@
           </div>
         </div>
       </div>
+      
+      <!-- Add Total Winnings Display -->
+      <div class="flex flex-col sm:flex-row items-center justify-between mt-4">
+        <div class="w-full sm:w-1/3 mb-4 sm:mb-0 pr-0 sm:pr-2">
+          <label class="mb-2 block text-gray-700">Total Winnings:</label>
+          <div class="flex items-center">
+            <span class="text-lg font-semibold">€{{ totalWinnings.toFixed(2) }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="flex justify-end mt-4">
         <button
           @click="generateTickets"
@@ -66,6 +77,7 @@ import { useRuntimeConfig } from '#app'
 import type { Ticket } from '~/types/ticket'
 import SimulationResult from './SimulationResult.vue'
 import TicketComponent from './Ticket.vue'
+import { fetchLatestWinningData, calculateTotalWinnings } from '~/utils/winningManager'
 import { determineWinClass } from '~/utils/winningClasses'
 
 interface TicketType {
@@ -123,13 +135,16 @@ const tickets = ref<Ticket[]>([])
 const loading = ref(false)
 const error = ref('')
 const simulationResult = ref<Ticket | null>(null)
+const totalWinnings = ref<number>(0)
 
 const config = useRuntimeConfig()
 
 const generateTickets = async () => {
-  loading.value = true
-  error.value = ''
-  tickets.value = []
+  loading.value = true;
+  error.value = '';
+  tickets.value = [];
+  totalWinnings.value = 0;
+  simulationResult.value = null; // Reset simulation result
 
   try {
     const response = await fetch(`${config.public.apiBase}/generate`, {
@@ -142,82 +157,109 @@ const generateTickets = async () => {
         mainCount: selectedTicketType.value.mainCount,
         euroCount: selectedTicketType.value.euroCount
       })
-    })
+    });
 
     if (response.ok) {
-      tickets.value = await response.json()
-      checkWinningNumbers()
+      tickets.value = await response.json();
+      // Remove the winning data calculation here, as we haven't simulated yet
     } else {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Error generating tickets')
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error generating tickets');
     }
   } catch (err: any) {
-    console.error('Error:', err)
-    error.value = err.message
+    console.error('Error:', err);
+    error.value = err.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const simulateExtraction = async () => {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = '';
+  simulationResult.value = null;
+  totalWinnings.value = 0;
 
   try {
     const response = await fetch(`${config.public.apiBase}/simulate`, {
       method: 'GET'
-    })
+    });
 
     if (response.ok) {
-      simulationResult.value = await response.json()
-      checkWinningNumbers()
+      simulationResult.value = await response.json();
+      checkWinningNumbers();
+      const winningData = await fetchLatestWinningData();
+      if (winningData) {
+        totalWinnings.value = calculateTotalWinnings(tickets.value, winningData);
+      } else {
+        console.warn('Unable to calculate total winnings: winning data not available');
+      }
     } else {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Error simulating extraction')
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error simulating extraction');
     }
   } catch (err: any) {
-    console.error('Error:', err)
-    error.value = err.message
+    console.error('Error:', err);
+    error.value = err.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
+// components/TicketGenerator.vue
 const checkWinningNumbers = () => {
   if (simulationResult.value && tickets.value.length > 0) {
     tickets.value.forEach(ticket => {
       // Reset previous winning information
-      ticket.winningMainNumbers = undefined
-      ticket.winningEuroNumbers = undefined
-      ticket.winClass = undefined
+      ticket.winningMainNumbers = undefined;
+      ticket.winningEuroNumbers = undefined;
+      ticket.winClass = undefined;
 
-      const matchedMain = simulationResult.value!.mainNumbers.filter(num => ticket.mainNumbers.includes(num)).length
-      const matchedEuro = simulationResult.value!.euroNumbers.filter(num => ticket.euroNumbers.includes(num)).length
+      const matchedMain = simulationResult.value!.mainNumbers.filter(num => ticket.mainNumbers.includes(num)).length;
+      const matchedEuro = simulationResult.value!.euroNumbers.filter(num => ticket.euroNumbers.includes(num)).length;
 
-      const winClass = determineWinClass(matchedMain, matchedEuro)
+      const winClass = determineWinClass(matchedMain, matchedEuro);
 
       if (winClass) {
-        ticket.winClass = winClass
+        ticket.winClass = winClass;
       }
 
       // Mark winning main numbers
-      ticket.winningMainNumbers = ticket.mainNumbers.filter(number => simulationResult.value!.mainNumbers.includes(number))
+      ticket.winningMainNumbers = ticket.mainNumbers.filter(number => simulationResult.value!.mainNumbers.includes(number));
 
       // Mark winning euro numbers
-      ticket.winningEuroNumbers = ticket.euroNumbers.filter(number => simulationResult.value!.euroNumbers.includes(number))
-    })
+      ticket.winningEuroNumbers = ticket.euroNumbers.filter(number => simulationResult.value!.euroNumbers.includes(number));
+    });
 
     // Sort tickets: winners first, then by win class
     tickets.value.sort((a, b) => {
-      if (a.winClass && !b.winClass) return -1
-      if (!a.winClass && b.winClass) return 1
-      if (a.winClass && b.winClass) return a.winClass - b.winClass
-      return 0
-    })
+      if (a.winClass && !b.winClass) return -1;
+      if (!a.winClass && b.winClass) return 1;
+      if (a.winClass && b.winClass) return a.winClass - b.winClass;
+      return 0;
+    });
   }
-}
+};
+
+
+const fetchLatestWinningData = async () => {
+  try {
+    const response = await fetch(`${config.public.apiBase}/fetchWinningData`);
+    if (!response.ok) {
+      console.error('Error fetching winning data:', error);
+      const fallbackData = await response.json();
+      console.log('Using fallback winning data:', fallbackData);
+      return fallbackData;
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching winning data:', error);
+    error.value = error instanceof Error ? error.message : 'An error occurred while fetching winning data';
+    return null;
+  }
+};
 </script>
 
 <style scoped>
-/* Add any necessary styles here */
+/* Add any necessary styles */
 </style>
