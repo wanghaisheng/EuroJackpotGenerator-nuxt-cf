@@ -1,6 +1,6 @@
 import type { StatisticsData } from '../types/statistics';
 
-export function generateNumbersWithStats(count: number, stats: StatisticsData[]): number[] {
+export function generateNumbersWithStats(count: number, stats: StatisticsData['numbers'] | StatisticsData['additionalNumbers']): number[] {
   if (!stats || stats.length === 0) {
     console.warn('No valid statistics data provided. Falling back to random number generation.');
     return generateRandomNumbers(count, 1, count === 2 ? 12 : 50);
@@ -8,13 +8,15 @@ export function generateNumbersWithStats(count: number, stats: StatisticsData[])
 
   // Calculate total adjusted counts using square root to smooth probabilities
   const adjustedStats = stats.map(item => ({
-    number: parseInt(item.number, 10),
-    adjustedValue: Math.sqrt(item.count),
+    number: item.number,
+    adjustedValue: Math.sqrt(item.value),
   }));
 
   // Filter out any invalid entries
   const validAdjustedStats = adjustedStats.filter(item => 
-    !isNaN(item.number) && isFinite(item.adjustedValue) && item.adjustedValue > 0
+    Number.isInteger(item.number) &&
+    Number.isFinite(item.adjustedValue) &&
+    item.adjustedValue > 0
   );
 
   if (validAdjustedStats.length === 0) {

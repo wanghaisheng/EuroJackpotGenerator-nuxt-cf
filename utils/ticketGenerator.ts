@@ -1,9 +1,10 @@
 import { fetchStatistics } from './statisticsManager';
 import { generateNumbersWithStats, generateRandomNumbers } from './numberGenerator';
 import type { Ticket, TicketSet } from '~/types/ticket';
+import type { StatisticsData } from '../types/statistics';
 
 export async function generateTickets(numSets: number): Promise<TicketSet[]> {
-  let statsData: any | null = null;
+  let statsData: StatisticsData | null = null;
   try {
     statsData = await fetchStatistics();
   } catch (error) {

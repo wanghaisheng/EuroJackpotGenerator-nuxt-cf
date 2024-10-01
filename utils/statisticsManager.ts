@@ -5,7 +5,7 @@ let lastFetchTime = 0;
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 const isValidData = (data: any): data is StatisticsData => 
-  data?.numbers?.length > 0 && data?.additionalNumbers?.length > 0;
+  Array.isArray(data.numbers) && data.numbers.length > 0 && Array.isArray(data.additionalNumbers) && data.additionalNumbers.length > 0;
 
 export async function fetchStatistics(): Promise<StatisticsData | null> {
   const now = Date.now();
@@ -23,6 +23,8 @@ export async function fetchStatistics(): Promise<StatisticsData | null> {
 
     const statsData = await response.json();
     if (!isValidData(statsData)) throw new Error('Invalid statistics data');
+
+    // console.log('Fetched Statistics Data:', statsData); // Added logging
 
     cachedStats = statsData;
     lastFetchTime = now;
