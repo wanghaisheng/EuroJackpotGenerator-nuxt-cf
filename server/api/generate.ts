@@ -4,16 +4,22 @@ import { H3Error, createError } from 'h3';
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
-    const numSets = parseInt(body.numSets, 10) || 1;
+    const ticketCount = parseInt(body.ticketCount, 10) || 1;
+    const mainCount = parseInt(body.mainCount, 10) || 5;
+    const euroCount = parseInt(body.euroCount, 10) || 2;
 
-    if (isNaN(numSets) || numSets < 1 || numSets > 10) {
+    if (
+      isNaN(ticketCount) ||
+      ticketCount < 1 ||
+      ticketCount > 1000 // You can set a reasonable upper limit
+    ) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Number of sets must be a number between 1 and 10.',
+        statusMessage: 'Number of tickets must be a number between 1 and 1000.',
       });
     }
 
-    const tickets = await generateTickets(numSets);
+    const tickets = await generateTickets(ticketCount, mainCount, euroCount);
     return tickets;
   } catch (error) {
     console.error('Error generating tickets:', error);

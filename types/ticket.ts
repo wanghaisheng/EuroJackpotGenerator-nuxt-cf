@@ -1,4 +1,5 @@
 export interface Ticket {
+  id: number
   mainNumbers: number[];
   euroNumbers: number[];
   winningMainNumbers?: number[];

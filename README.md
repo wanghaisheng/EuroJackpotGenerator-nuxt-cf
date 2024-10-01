@@ -1,10 +1,10 @@
 # EuroJackpot Generator
 
-EuroJackpot Generator is a web application that generates EuroJackpot numbers based on historical draw frequencies. It provides users with a simple interface to generate multiple sets of EuroJackpot tickets and simulate prize extractions to identify winning tickets.
+EuroJackpot Generator is a web application that generates EuroJackpot numbers based on historical draw frequencies. It provides users with a simple interface to generate multiple system tickets and simulate prize extractions to identify winning tickets.
 
 ## Features
 
-- **Generate Multiple Sets of EuroJackpot Tickets**: Create numerous sets of tickets with unique number combinations.
+- **Generate Multiple System Tickets**: Create numerous tickets with customizable number combinations based on system types.
 - **Simulate Prize Extraction**: Perform simulated draws to determine winning numbers.
 - **Winning Class Identification**: Automatically identify and display the winning class for each ticket based on the simulation.
 - **Highlight Winning Tickets**: Visually highlight winning tickets and their corresponding winning numbers.

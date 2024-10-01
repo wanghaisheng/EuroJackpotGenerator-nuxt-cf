@@ -1,9 +1,15 @@
 import { fetchStatistics } from './statisticsManager';
 import { generateNumbersWithStats, generateRandomNumbers } from './numberGenerator';
-import type { Ticket, TicketSet } from '~/types/ticket';
+import type { Ticket } from '~/types/ticket';
 import type { StatisticsData } from '../types/statistics';
 
-export async function generateTickets(numSets: number): Promise<TicketSet[]> {
+let ticketIdCounter = 1;
+
+export async function generateTickets(
+  ticketCount: number,
+  mainCount: number,
+  euroCount: number
+): Promise<Ticket[]> {
   let statsData: StatisticsData | null = null;
   try {
     statsData = await fetchStatistics();
@@ -11,54 +17,46 @@ export async function generateTickets(numSets: number): Promise<TicketSet[]> {
     console.error('Failed to fetch statistics, using random generation:', error);
   }
 
-  const generatedTickets = new Set<string>();
-  const sets: TicketSet[] = [];
+  const generatedTickets = [];
+  const uniqueTickets = new Set<string>();
 
-  for (let setIndex = 0; setIndex < numSets; setIndex++) {
-    const tickets: Ticket[] = [];
+  for (let i = 0; i < ticketCount; i++) {
+    let mainNumbers: number[];
+    let euroNumbers: number[];
+    let ticketKey: string;
+    let retries = 0;
+    const MAX_RETRIES = 10;
 
-    for (let ticketIndex = 0; ticketIndex < 12; ticketIndex++) {
-      let mainNumbers: number[];
-      let euroNumbers: number[];
-      let ticketKey: string;
-      let retries = 0;
-      const MAX_RETRIES = 10;
-
-      do {
-        try {
-          if (statsData) {
-            mainNumbers = generateNumbersWithStats(5, statsData.numbers);
-            euroNumbers = generateNumbersWithStats(2, statsData.additionalNumbers);
-          } else {
-            mainNumbers = generateRandomNumbers(5, 1, 50);
-            euroNumbers = generateRandomNumbers(2, 1, 12);
-          }
-        } catch (error) {
-          console.error('Error generating numbers, falling back to random:', error);
-          mainNumbers = generateRandomNumbers(5, 1, 50);
-          euroNumbers = generateRandomNumbers(2, 1, 12);
+    do {
+      try {
+        if (statsData) {
+          mainNumbers = generateNumbersWithStats(mainCount, statsData.numbers);
+          euroNumbers = generateNumbersWithStats(euroCount, statsData.additionalNumbers);
+        } else {
+          mainNumbers = generateRandomNumbers(mainCount, 1, 50);
+          euroNumbers = generateRandomNumbers(euroCount, 1, 12);
         }
-        ticketKey = mainNumbers.join(',') + '|' + euroNumbers.join(',');
-        retries += 1;
+      } catch (error) {
+        console.error('Error generating numbers, falling back to random:', error);
+        mainNumbers = generateRandomNumbers(mainCount, 1, 50);
+        euroNumbers = generateRandomNumbers(euroCount, 1, 12);
+      }
+      ticketKey = mainNumbers.join(',') + '|' + euroNumbers.join(',');
+      retries += 1;
 
-        if (retries > MAX_RETRIES) {
-          throw new Error('Max retries exceeded while generating unique tickets.');
-        }
-      } while (generatedTickets.has(ticketKey));
+      if (retries > MAX_RETRIES) {
+        throw new Error('Max retries exceeded while generating unique tickets.');
+      }
+    } while (uniqueTickets.has(ticketKey));
 
-      generatedTickets.add(ticketKey);
+    uniqueTickets.add(ticketKey);
 
-      tickets.push({
-        mainNumbers: mainNumbers,
-        euroNumbers: euroNumbers,
-      });
-    }
-
-    sets.push({
-      setNumber: setIndex + 1,
-      tickets: tickets,
+    generatedTickets.push({
+      id: ticketIdCounter++, // Assign a unique ID for each ticket
+      mainNumbers,
+      euroNumbers
     });
   }
 
-  return sets;
+  return generatedTickets;
 }

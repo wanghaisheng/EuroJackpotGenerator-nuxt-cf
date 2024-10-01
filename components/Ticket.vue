@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Ticket } from '~/types/ticket'
+import type { Ticket } from '~/types/ticket'
 import TicketNumber from './TicketNumber.vue'
 
 interface Props {

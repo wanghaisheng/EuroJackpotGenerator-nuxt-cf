@@ -3,7 +3,7 @@ import type { StatisticsData } from '../types/statistics';
 export function generateNumbersWithStats(count: number, stats: StatisticsData['numbers'] | StatisticsData['additionalNumbers']): number[] {
   if (!stats || stats.length === 0) {
     console.warn('No valid statistics data provided. Falling back to random number generation.');
-    return generateRandomNumbers(count, 1, count === 2 ? 12 : 50);
+    return generateRandomNumbers(count, 1, count > 2 ? 50 : 12);
   }
 
   // Calculate total adjusted counts using square root to smooth probabilities
@@ -21,7 +21,7 @@ export function generateNumbersWithStats(count: number, stats: StatisticsData['n
 
   if (validAdjustedStats.length === 0) {
     console.warn('No valid adjusted statistics. Falling back to random number generation.');
-    return generateRandomNumbers(count, 1, count === 2 ? 12 : 50);
+    return generateRandomNumbers(count, 1, count > 2 ? 50 : 12);
   }
 
   // Initialize an empty array for cumulative distribution
@@ -40,7 +40,7 @@ export function generateNumbersWithStats(count: number, stats: StatisticsData['n
   // Check if the cumulative distribution is valid
   if (cumulativeDistribution.length === 0 || !isFinite(cumulativeSum) || cumulativeSum <= 0) {
     console.warn('Invalid cumulative distribution. Falling back to random number generation.');
-    return generateRandomNumbers(count, 1, count === 2 ? 12 : 50);
+    return generateRandomNumbers(count, 1, count > 2 ? 50 : 12);
   }
 
   const totalAdjustedValue = cumulativeSum;
