@@ -1,10 +1,12 @@
 export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
+
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api'
     }
   },
+
   app: {
     head: {
       title: 'EuroJackpot Generator',
@@ -18,7 +20,10 @@ export default defineNuxtConfig({
       ]
     }
   },
+
   nitro: {
     preset: 'cloudflare-pages'
-  }
+  },
+
+  compatibilityDate: '2024-10-01'
 })

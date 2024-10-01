@@ -12,12 +12,22 @@ export function generateNumbersWithStats(count: number, stats: StatisticsData[])
     adjustedValue: Math.sqrt(item.count),
   }));
 
+  // Filter out any invalid entries
+  const validAdjustedStats = adjustedStats.filter(item => 
+    !isNaN(item.number) && isFinite(item.adjustedValue) && item.adjustedValue > 0
+  );
+
+  if (validAdjustedStats.length === 0) {
+    console.warn('No valid adjusted statistics. Falling back to random number generation.');
+    return generateRandomNumbers(count, 1, count === 2 ? 12 : 50);
+  }
+
   // Initialize an empty array for cumulative distribution
   const cumulativeDistribution: { number: number; cumulative: number }[] = [];
   let cumulativeSum = 0;
 
   // Build the cumulative distribution sequentially
-  for (const item of adjustedStats) {
+  for (const item of validAdjustedStats) {
     cumulativeSum += item.adjustedValue;
     cumulativeDistribution.push({
       number: item.number,
