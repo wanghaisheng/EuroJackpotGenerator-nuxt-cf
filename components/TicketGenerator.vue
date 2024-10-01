@@ -5,13 +5,30 @@
         <div class="w-full sm:w-1/2 mb-4 sm:mb-0 pr-0 sm:pr-2">
           <label for="numSets" class="mb-2 block text-gray-700">Generate tickets:</label>
           <div class="flex items-center">
-            <input type="number" id="numSets" v-model="numSets" min="1" class="w-20 px-3 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Number of sets">
-            <button @click="generateTickets" class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Generate</button>
+            <input
+              type="number"
+              id="numSets"
+              v-model="numSets"
+              min="1"
+              class="w-20 px-3 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Number of sets"
+            />
+            <button
+              @click="generateTickets"
+              class="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              Generate
+            </button>
           </div>
         </div>
         <div class="w-full sm:w-1/2 pl-0 sm:pl-2">
           <label class="mb-2 block text-gray-700">Simulate extraction:</label>
-          <button @click="simulateExtraction" class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">Simulate</button>
+          <button
+            @click="simulateExtraction"
+            class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            Simulate
+          </button>
         </div>
       </div>
     </div>
@@ -27,7 +44,6 @@
             :key="index"
             :ticket="ticket"
             :ticket-number="index + 1"
-            :winning-numbers="simulationResult"
           />
         </div>
       </div>
@@ -36,10 +52,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useRuntimeConfig } from '#app'
-import type { TicketSet, Ticket } from '~/types/ticket'
+import type { TicketSet } from '~/types/ticket'
 import SimulationResult from './SimulationResult.vue'
+import { determineWinClass } from '~/utils/winningClasses'
 
 const config = useRuntimeConfig()
 const numSets = ref(1)
@@ -68,7 +85,7 @@ const generateTickets = async () => {
       const errorData = await response.json()
       throw new Error(errorData.error || 'Error generating tickets')
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error:', err)
     error.value = err.message
   } finally {
@@ -92,7 +109,7 @@ const simulateExtraction = async () => {
       const errorData = await response.json()
       throw new Error(errorData.error || 'Error simulating extraction')
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error:', err)
     error.value = err.message
   } finally {
@@ -104,15 +121,36 @@ const checkWinningNumbers = () => {
   if (simulationResult.value && tickets.value.length > 0) {
     tickets.value.forEach(set => {
       set.tickets.forEach(ticket => {
+        // Reset previous winning information
+        ticket.winClass = undefined
+        ticket.winningMainNumbers = undefined
+        ticket.winningEuroNumbers = undefined
+
+        const matchedMain = simulationResult.value!.mainNumbers.filter(num => ticket.mainNumbers.includes(num)).length
+        const matchedEuro = simulationResult.value!.euroNumbers.filter(num => ticket.euroNumbers.includes(num)).length
+
+        const winClass = determineWinClass(matchedMain, matchedEuro)
+
+        if (winClass) {
+          ticket.winClass = winClass
+        }
+
+        // Mark winning main numbers
         ticket.mainNumbers.forEach(number => {
-          if (simulationResult.value?.mainNumbers.includes(number)) {
-            ticket.winningMainNumbers = ticket.winningMainNumbers || []
+          if (simulationResult.value!.mainNumbers.includes(number)) {
+            if (!ticket.winningMainNumbers) {
+              ticket.winningMainNumbers = []
+            }
             ticket.winningMainNumbers.push(number)
           }
         })
+
+        // Mark winning euro numbers
         ticket.euroNumbers.forEach(number => {
-          if (simulationResult.value?.euroNumbers.includes(number)) {
-            ticket.winningEuroNumbers = ticket.winningEuroNumbers || []
+          if (simulationResult.value!.euroNumbers.includes(number)) {
+            if (!ticket.winningEuroNumbers) {
+              ticket.winningEuroNumbers = []
+            }
             ticket.winningEuroNumbers.push(number)
           }
         })
@@ -120,7 +158,4 @@ const checkWinningNumbers = () => {
     })
   }
 }
-
-watch(simulationResult, checkWinningNumbers)
-watch(tickets, checkWinningNumbers)
 </script>
