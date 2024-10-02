@@ -22,7 +22,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: 'cloudflare-pages'
+    preset: "./cloudflare-preset"
   },
 
   compatibilityDate: '2024-10-01'

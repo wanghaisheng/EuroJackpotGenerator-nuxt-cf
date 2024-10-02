@@ -1,9 +1,18 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "eurojackpot"
-type = "javascript" # or "typescript" if applicable
-compatibility_date = "2024-04-27" # update to current date
-pages_build_output_dir = "./dist"
+compatibility_date = "2024-10-01"
+main = "./dist/worker/index.js"
+assets = { directory = "./dist/public", binding = "ASSETS" }
 
+routes = [
+  { pattern = "eurojackpot.vv42.net", custom_domain = true }
+]
+
+# Enable workers.dev subdomain
+workers_dev = true
+
+[observability]
+enabled = true
 # Include any bindings if necessary
 # For example, if using durable objects or KV namespaces
 
